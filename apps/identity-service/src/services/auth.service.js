@@ -117,11 +117,27 @@ export const loginUser = async ({ email, password }) => {
   }
 
 
+// Fetch the roles associated with the user from the database. This involves querying the roles table and joining it with the user_roles table to get all roles assigned to the user. The roles are then mapped to an array of role names, which can be used for authorization purposes in the application.
+  const roleResult = await pool.query(
+  `
+  SELECT r.name
+  FROM roles r
+  INNER JOIN user_roles ur
+    ON ur.role_id = r.id
+  WHERE ur.user_id = $1
+  `,
+  [user.id]
+);
+
+const roles = roleResult.rows.map(role => role.name);
+
+
   // Generate JWT token using jsonwebtoken library. The token includes the user's id and email as payload, and it is signed with a secret key (JWT_SECRET) defined in the environment variables. The token also has an expiration time (JWT_EXPIRES_IN) specified in the environment variables.
   const accessToken = jwt.sign(
     {
       id: user.id,
       email: user.email,
+      roles: roles, // Include the user's roles in the JWT payload for authorization purposes. This allows the application to check the user's roles when accessing protected routes or performing actions that require specific permissions.
     },
     process.env.JWT_SECRET,
     {
