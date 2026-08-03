@@ -3,6 +3,7 @@
 import bcrypt from "bcrypt";
 import validator from "validator";
 import pool from "../config/database.js";
+import jwt from "jsonwebtoken";
 
 export const registerUser = async (userData) => {
   const { first_name, email, password, phone } = userData;
@@ -40,4 +41,48 @@ export const registerUser = async (userData) => {
   );
 
   return result.rows[0];
+};
+
+export const loginUser = async ({ email, password }) => {
+  if (!email || !password) {
+    throw new Error("Email and password are required");
+  }
+
+  // Validate email
+  const result = await pool.query(
+    `SELECT * FROM users WHERE email = $1`,
+    [email]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("Invalid email or password");
+  }
+
+  const user = result.rows[0]; // user object contains all the user details fetched from the database, including id, first_name, email, password_hash, phone, created_at, and updated_at.
+  
+  // Compare the provided password with the stored hashed password using bcrypt.compare. This function takes the plain text password and the hashed password from the database and checks if they match.
+  const isPasswordValid = await bcrypt.compare(
+    password,
+    user.password_hash
+  );
+ 
+  // If the password is not valid, throw an error indicating that the email or password is invalid. This prevents unauthorized access to the system.
+  if (!isPasswordValid) {
+    throw new Error("Invalid email or password");
+  }
+
+
+  // Generate JWT token using jsonwebtoken library. The token includes the user's id and email as payload, and it is signed with a secret key (JWT_SECRET) defined in the environment variables. The token also has an expiration time (JWT_EXPIRES_IN) specified in the environment variables.
+  const token = jwt.sign(
+    {
+      id: user.id,
+      email: user.email,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN,
+    }
+  );
+
+  return token;
 };
