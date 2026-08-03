@@ -1,6 +1,6 @@
 //Controller → Receives the request and sends the response.
 
-import { registerUser, loginUser} from "../services/auth.service.js";
+import { registerUser, loginUser,refreshAccessToken,logoutUser} from "../services/auth.service.js";
 
 export const register = async (req, res) => {
   try {
@@ -19,14 +19,18 @@ export const register = async (req, res) => {
   }
 };
 
+
 export const login = async (req, res) => {
   try {
-    const token = await loginUser(req.body);
+    const tokens = await loginUser(req.body);
 
     res.status(200).json({
       success: true,
       message: "User logged in successfully",
-      data: { token },
+      // data: { token },
+      //data: { accessToken, refreshToken },
+    //data:{... tokens}  When you want to add or overwrite properties.
+      data: tokens,
     });
   } catch (error) {
     res.status(401).json({
@@ -34,4 +38,49 @@ export const login = async (req, res) => {
       message: error.message,
     });
   }
+};
+
+
+export const refresh = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    const accessToken = await refreshAccessToken(refreshToken);
+
+    res.status(200).json({
+      success: true,
+      message: "Access token refreshed successfully",
+      data: {
+        accessToken,
+      },
+    });
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+export const logout = async (req, res) => {
+    try {
+
+        const { refreshToken } = req.body;
+
+        await logoutUser(refreshToken);
+
+        res.status(200).json({
+            success: true,
+            message: "Logged out successfully"
+        });
+
+    } catch (error) {
+
+        res.status(400).json({
+            success:false,
+            message:error.message
+        });
+
+    }
 };

@@ -43,6 +43,8 @@ export const registerUser = async (userData) => {
   return result.rows[0];
 };
 
+
+
 export const loginUser = async ({ email, password }) => {
   if (!email || !password) {
     throw new Error("Email and password are required");
@@ -73,7 +75,7 @@ export const loginUser = async ({ email, password }) => {
 
 
   // Generate JWT token using jsonwebtoken library. The token includes the user's id and email as payload, and it is signed with a secret key (JWT_SECRET) defined in the environment variables. The token also has an expiration time (JWT_EXPIRES_IN) specified in the environment variables.
-  const token = jwt.sign(
+  const accessToken = jwt.sign(
     {
       id: user.id,
       email: user.email,
@@ -83,6 +85,115 @@ export const loginUser = async ({ email, password }) => {
       expiresIn: process.env.JWT_EXPIRES_IN,
     }
   );
+  // return  token ;
 
-  return token;
+
+  const refreshToken = jwt.sign(
+  {
+    id: user.id,
+  },
+  process.env.REFRESH_TOKEN_SECRET,
+  {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
+  }
+);
+
+// Decode the refresh token to get the expiration time. 
+// The decoded token contains the expiration time in seconds since the epoch,
+//  which is then converted to a JavaScript Date object for easier handling
+//  and storage in the database.
+
+const decodedRefreshToken = jwt.verify(
+  refreshToken,
+  process.env.REFRESH_TOKEN_SECRET
+);
+
+const expiresAt = new Date(decodedRefreshToken.exp * 1000);
+
+
+// Store the refresh token in the database for future validation and management. The refresh token is associated with the user's id and has an expiration date set to 7 days from the current date. This allows the system to manage refresh tokens, including revoking them if necessary, and provides a way for users to obtain new access tokens without having to log in again.
+await pool.query(
+  `
+    INSERT INTO refresh_tokens
+    (user_id, token, expires_at)
+    VALUES ($1,$2,$3)
+  `,
+  [
+    user.id,
+    refreshToken,
+    expiresAt,
+  ]
+);
+
+return {
+  user: {
+    id: user.id,
+    first_name: user.first_name,
+    email: user.email,
+    phone: user.phone,
+  },
+  accessToken,
+  refreshToken,
+};
+  
+};
+
+
+
+export const refreshAccessToken = async (refreshToken) => {
+  if (!refreshToken) {
+    throw new Error("Refresh token is required");
+  }
+
+  // Verify JWT signature and expiry
+  const decoded = jwt.verify(
+    refreshToken,
+    process.env.REFRESH_TOKEN_SECRET
+  );
+
+  // Check if token exists in database
+  const result = await pool.query(
+    `
+    SELECT * FROM refresh_tokens
+    WHERE token = $1
+    `,
+    [refreshToken]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("Invalid refresh token");
+  }
+
+  // Generate new access token
+  const accessToken = jwt.sign(
+    {
+      id: decoded.id,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN,
+    }
+  );
+
+  return accessToken;
+};
+
+export const logoutUser = async (refreshToken) => {
+
+    if (!refreshToken) {
+        throw new Error("Refresh token is required");
+    }
+
+    const result = await pool.query(
+        `
+        DELETE FROM refresh_tokens
+        WHERE token = $1
+        RETURNING id
+        `,
+        [refreshToken]
+    );
+
+    if (result.rows.length === 0) {
+        throw new Error("Invalid refresh token");
+    }
 };
