@@ -5,42 +5,85 @@ import validator from "validator";
 import pool from "../config/database.js";
 import jwt from "jsonwebtoken";
 
+
 export const registerUser = async (userData) => {
-  const { first_name, email, password, phone } = userData;
+  const client = await pool.connect();
+  // The purpose of this line is to obtain a client connection from the connection pool. This client will be used to execute queries against the database. By using a client from the pool, the application can efficiently manage database connections, allowing for better performance and resource utilization. It also enables the use of transactions, as a transaction must run on a single database connection.
+   //Because a transaction must run on one database connection. So you borrow one connection:
 
-  // Check required fields
-  if (!first_name || !email || !password) {
-    throw new Error("First name, email and password are required");
+  try {
+    const { first_name, email, password, phone } = userData;
+
+    if (!first_name || !email || !password) {
+      throw new Error("First name, email and password are required");
+    }
+
+    if (!validator.isEmail(email)) {
+      throw new Error("Invalid email address");
+    }
+
+    const existingUser = await client.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
+
+    if (existingUser.rows.length > 0) {
+      throw new Error("Email already registered");
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Start Transaction
+    await client.query("BEGIN");
+
+    const result = await client.query(
+      `
+      INSERT INTO users
+      (first_name, email, password_hash, phone)
+      VALUES ($1,$2,$3,$4)
+      RETURNING id, first_name, email, phone, created_at
+      `,
+      [first_name, email, passwordHash, phone]
+    );
+
+    // Assign the "Citizen" role to the newly registered user. This involves querying the roles table to get the id of the "Citizen" role and then inserting a record into the user_roles table to associate the new user with that role. This step is crucial for implementing role-based access control in the application, ensuring that users have appropriate permissions based on their assigned roles.
+    const roleResult = await client.query(
+      `
+      SELECT id
+      FROM roles
+      WHERE name = $1
+      `,
+      ["Citizen"]
+    );
+
+    const roleId = roleResult.rows[0].id;
+
+    await client.query(
+      `
+      INSERT INTO user_roles
+      (user_id, role_id)
+      VALUES ($1,$2)
+      `,
+      [result.rows[0].id, roleId]
+    );
+
+    // Commit Transaction
+    await client.query("COMMIT");
+
+    return result.rows[0];
+
+  } catch (error) {
+
+    // Undo everything
+    await client.query("ROLLBACK");
+
+    throw error;
+
+  } finally {
+
+    client.release();
+
   }
-
-  // Validate email
-  if (!validator.isEmail(email)) {
-    throw new Error("Invalid email address");
-  }
-
-  // Check if email already exists
-  const existingUser = await pool.query(
-    "SELECT id FROM users WHERE email = $1",
-    [email]
-  );
-
-  if (existingUser.rows.length > 0) {
-    throw new Error("Email already registered");
-  }
-
-  // Hash password
-  const passwordHash = await bcrypt.hash(password, 10);
-
-  // Insert user
-  const result = await pool.query(
-    `INSERT INTO users
-    (first_name, email, password_hash, phone)
-    VALUES ($1, $2, $3, $4)
-    RETURNING id, first_name, email, phone, created_at`,
-    [first_name, email, passwordHash, phone]
-  );
-
-  return result.rows[0];
 };
 
 
