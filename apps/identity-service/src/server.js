@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
+import authRoutes from "./routes/auth.routes.js";
 
 dotenv.config(); // reads .env file and sets environment variables
 
@@ -18,6 +19,11 @@ app.use(cors()); // if origin is allowed continue else reject
 
 // Parse JSON request body // without it req.body will undefined for JSON requests it converts incoming JSON payloads into JavaScript objects, making it easier to work with the data in your route handlers.
 app.use(express.json());
+
+
+app.use("/api/v1/auth", authRoutes);
+
+
 
 // Health Check Route
 app.get("/health", (req, res) => {
@@ -44,11 +50,11 @@ const PORT = process.env.PORT || 3001; // fallback to 3001 if PORT is not define
 try {
     //result is promise that resolves to the result of the query. It contains information about the query execution, including the rows returned, row count, and any errors that occurred during execution.
   const result = await pool.query("SELECT NOW();");
-  console.log("Database Connected");
+  console.log("PostgreSQL Database Connected");
    console.log(result.rows[0]);
   
 } catch (error) {
-  console.error(" Database Connection Failed");
+  console.error(" PostgreSQL Database Connection Failed");
   console.error(error.message);
   process.exit(1); // Exit the process with a non-zero status code to indicate failure
 }
