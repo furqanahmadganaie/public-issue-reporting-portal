@@ -4,6 +4,10 @@ import bcrypt from "bcrypt";
 import validator from "validator";
 import pool from "../config/database.js";
 import jwt from "jsonwebtoken";
+import {generateOTP} from "../utils/otp.js"; 
+import { sendOTP } from "./sms.service.js"; // Import the sendOTP function from the sms.service.js file. This function is responsible for sending the generated OTP to the user's phone number via SMS. It is used in the registerUser function to send an OTP after a user successfully registers, providing an additional layer of security and verification.
+
+
 
 
 export const registerUser = async (userData) => {
@@ -67,10 +71,43 @@ export const registerUser = async (userData) => {
       [result.rows[0].id, roleId]
     );
 
-    // Commit Transaction
-    await client.query("COMMIT");
 
-    return result.rows[0];
+
+// Generate OTP
+const otp = generateOTP();
+
+// Hash OTP
+const otpHash = await bcrypt.hash(otp, 10);
+
+// OTP expires after 10 minutes
+const expiresAt = new Date();
+expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+
+// Save OTP in database
+await client.query(
+  `
+  INSERT INTO phone_verification_tokens
+  (user_id, phone, otp_hash, expires_at)
+  VALUES ($1, $2, $3, $4)
+  `,
+  [
+    result.rows[0].id,
+    phone,
+    otpHash,
+    expiresAt,
+  ]
+);
+
+
+
+ // Commit Transaction
+ await client.query("COMMIT");
+
+// Send OTP after successful commit
+await sendOTP(phone, otp);
+
+return result.rows[0];
+
 
   } catch (error) {
 
@@ -84,6 +121,215 @@ export const registerUser = async (userData) => {
     client.release();
 
   }
+};
+
+
+
+export const verifyPhone = async ({ phone, otp }) => {
+  const client = await pool.connect();// The purpose of this line is to obtain a client connection from the connection pool. This client will be used to execute queries against the database. By using a client from the pool, the application can efficiently manage database connections, allowing for better performance and resource utilization. It also enables the use of transactions, as a transaction must run on a single database connection.
+    let transactionStarted = false;
+  try {
+    // Validate input
+    if (!phone || !otp) {
+      throw new Error("Phone number and OTP are required");
+    }
+
+    // Get latest OTP for this phone number
+    const result = await client.query(
+      `
+      SELECT *
+      FROM phone_verification_tokens
+      WHERE phone = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
+      [phone]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error("OTP not found");
+    }
+
+    const verification = result.rows[0];
+
+    // Check OTP expiry
+    if (new Date() > verification.expires_at) {
+      throw new Error("OTP has expired");
+    }
+
+    // Limit attempts
+    if (verification.attempts >= 5) {
+      throw new Error("Too many invalid attempts. Please request a new OTP.");
+    }
+
+    // Compare OTP with hashed OTP
+    const isValidOTP = await bcrypt.compare(
+      otp,
+      verification.otp_hash
+    );
+
+
+
+    // wrong otp 
+    if (!isValidOTP) {
+
+    const attempts = verification.attempts + 1;
+
+    if (attempts >= 5) {
+
+        await client.query(
+            `
+            DELETE FROM phone_verification_tokens
+            WHERE id = $1
+            `,
+            [verification.id]
+        );
+
+        throw new Error(
+            "Too many invalid attempts. Please request a new OTP."
+        );
+    }
+
+    await client.query(
+        `
+        UPDATE phone_verification_tokens
+        SET attempts = attempts + 1
+        WHERE id = $1
+        `,
+        [verification.id]
+    );
+
+    throw new Error("Invalid OTP");
+}
+
+
+
+
+
+    // Start transaction
+    await client.query("BEGIN");
+
+
+      transactionStarted = true;
+
+
+    // Mark phone as verified
+    await client.query(
+      `
+      UPDATE users
+      SET is_phone_verified = TRUE,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+      `,
+      [verification.user_id]
+    );
+
+    // Delete OTP after successful verification
+    await client.query(
+      `
+      DELETE FROM phone_verification_tokens
+      WHERE id = $1 AND user_id = $2
+      `,
+      [verification.id, verification.user_id]
+    );
+
+    // Commit transaction
+    await client.query("COMMIT");
+    transactionStarted = false;
+
+    return {
+      success: true,
+      message: "Phone number verified successfully.",
+    };
+
+  } catch (error) {
+
+     if (transactionStarted) {
+      await client.query("ROLLBACK");
+    }
+
+    throw error;
+
+  } finally {
+
+    client.release();
+
+  }
+};
+
+
+export const resendOTPService = async ({ phone }) => {
+  if (!phone) {
+    throw new Error("Phone number is required");
+  }
+
+  // Check if user exists
+  const userResult = await pool.query(
+    `
+    SELECT id, is_phone_verified
+    FROM users
+    WHERE phone = $1
+    `,
+    [phone]
+  );
+
+  if (userResult.rows.length === 0) {
+    throw new Error("User not found");
+  }
+
+  const user = userResult.rows[0];
+
+  // Phone already verified
+  if (user.is_phone_verified) {
+    throw new Error("Phone number is already verified");
+  }
+
+  // Delete any existing OTPs for this phone
+  await pool.query(
+    `
+    DELETE FROM phone_verification_tokens
+    WHERE phone = $1
+    `,
+    [phone]
+  );
+
+  // Generate new OTP
+  const otp = generateOTP();
+
+  // Hash OTP
+  const otpHash = await bcrypt.hash(otp, 10);
+
+  // OTP expires after 10 minutes
+  const expiresAt = new Date();
+  expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+  // Store new OTP
+  await pool.query(
+    `
+    INSERT INTO phone_verification_tokens
+    (
+      user_id,
+      phone,
+      otp_hash,
+      expires_at
+    )
+    VALUES ($1, $2, $3, $4)
+    `,
+    [
+      user.id,
+      phone,
+      otpHash,
+      expiresAt,
+    ]
+  );
+
+  // Send OTP
+  await sendOTP(phone, otp);
+
+  return {
+    success: true,
+    message: "OTP sent successfully.",
+  };
 };
 
 

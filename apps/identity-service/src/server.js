@@ -4,6 +4,8 @@ import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.routes.js";
+import cookieParser from "cookie-parser";
+import {generateOTP} from "./utils/otp.js";
 
 dotenv.config(); // reads .env file and sets environment variables
 
@@ -20,6 +22,11 @@ app.use(cors()); // if origin is allowed continue else reject
 // Parse JSON request body // without it req.body will undefined for JSON requests it converts incoming JSON payloads into JavaScript objects, making it easier to work with the data in your route handlers.
 app.use(express.json());
 
+// Parse URL-encoded request body
+app.use(express.urlencoded({ extended: true })); // This middleware is used to parse incoming requests with URL-encoded payloads, such as form submissions. The extended: true option allows for rich objects and arrays to be encoded into the URL-encoded format, enabling more complex data structures to be sent in the request body. It converts the URL-encoded data into a JavaScript object that can be accessed via req.body in your route handlers.
+ 
+// Parse URL-encoded request body 
+app.use(cookieParser()); // This middleware is used to parse cookies from incoming requests. It populates the req.cookies object with key-value pairs representing the cookies sent by the client. This allows you to easily access and work with cookies in your route handlers, such as for authentication or session management.
 
 app.use("/api/v1/auth", authRoutes);
 
@@ -59,6 +66,10 @@ try {
   process.exit(1); // Exit the process with a non-zero status code to indicate failure
 }
 
+
+
 app.listen(PORT, () => {
     console.log(`🚀 Identity Service running on port ${PORT}`);
 });
+
+// console.log(generateOTP()); 

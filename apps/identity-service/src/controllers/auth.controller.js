@@ -1,6 +1,8 @@
 //Controller → Receives the request and sends the response.
 
-import { registerUser, loginUser,refreshAccessToken,logoutUser} from "../services/auth.service.js";
+import { registerUser, loginUser,refreshAccessToken,logoutUser,verifyPhone,resendOTPService} from "../services/auth.service.js";
+
+
 
 export const register = async (req, res) => {
   try {
@@ -20,18 +22,69 @@ export const register = async (req, res) => {
 };
 
 
+export const verifyPhoneNumber = async (req, res) => {
+  try {
+    const result = await verifyPhone(req.body);
+
+    res.status(200).json(result);
+
+  } catch (error) {
+
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
+};
+
+export const resendOTP = async (req, res) => {
+  try {
+    const result = await resendOTPService(req.body);
+
+    res.status(200).json(result);
+
+  } catch (error) {
+
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
+};
+
+
 export const login = async (req, res) => {
   try {
     const tokens = await loginUser(req.body);
 
-    res.status(200).json({
+
+      res.cookie("refreshToken", tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    // res.status(200).json({
+    //   success: true,
+    //   message: "User logged in successfully",
+    //   // data: { token },
+    //   //data: { accessToken, refreshToken },
+    // //data:{... tokens}  When you want to add or overwrite properties.
+    //   data: tokens,
+    // });
+
+ res.status(200).json({
       success: true,
       message: "User logged in successfully",
-      // data: { token },
-      //data: { accessToken, refreshToken },
-    //data:{... tokens}  When you want to add or overwrite properties.
-      data: tokens,
+      data: {
+        user: tokens.user,
+        accessToken: tokens.accessToken,
+      },
     });
+
   } catch (error) {
     res.status(401).json({
       success: false,
@@ -43,7 +96,9 @@ export const login = async (req, res) => {
 
 export const refresh = async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    // const { refreshToken } = req.body;
+
+    const refreshToken = req.cookies.refreshToken; // Get the refresh token from the cookie
 
     const accessToken = await refreshAccessToken(refreshToken);
 
@@ -66,7 +121,7 @@ export const refresh = async (req, res) => {
 export const logout = async (req, res) => {
     try {
 
-        const { refreshToken } = req.body;
+        const refreshToken = req.cookies.refreshToken; // Get the refresh token from the cookie
 
         await logoutUser(refreshToken);
 
