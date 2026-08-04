@@ -1,5 +1,4 @@
-CREATE TABLE IF NOT EXISTS phone_verification_tokens (
-
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 
     user_id INT NOT NULL,
@@ -14,12 +13,8 @@ CREATE TABLE IF NOT EXISTS phone_verification_tokens (
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_phone_verification_user
+    CONSTRAINT fk_password_reset_user
         FOREIGN KEY (user_id)
         REFERENCES users(id)
         ON DELETE CASCADE
 );
-
-
-ALTER TABLE phone_verification_tokens
-ADD COLUMN purpose VARCHAR(50) NOT NULL DEFAULT 'PHONE_VERIFICATION';

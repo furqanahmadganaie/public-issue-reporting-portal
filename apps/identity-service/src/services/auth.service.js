@@ -483,6 +483,230 @@ export const refreshAccessToken = async (refreshToken) => {
   return accessToken;
 };
 
+
+export const forgotPasswordService = async ({ phone }) => {
+
+  if (!phone) {
+    throw new Error("Phone number is required");
+  }
+
+  // Check user
+  const result = await pool.query(
+    `
+    SELECT id, phone, is_phone_verified
+    FROM users
+    WHERE phone = $1
+    `,
+    [phone]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("User not found");
+  }
+
+  const user = result.rows[0];
+
+  if (!user.is_phone_verified) {
+    throw new Error("Please verify your phone number first.");
+  }
+
+  // Remove previous OTP
+  await pool.query(
+    `
+    DELETE FROM password_reset_tokens
+    WHERE user_id = $1
+    `,
+    [user.id]
+  );
+
+  // Generate OTP
+  const otp = generateOTP();
+
+  // Hash OTP
+  const otpHash = await bcrypt.hash(otp, 10);
+
+  // Expiry
+  const expiresAt = new Date();
+  expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+  // Save OTP
+  await pool.query(
+    `
+    INSERT INTO password_reset_tokens
+    (
+      user_id,
+      phone,
+      otp_hash,
+      expires_at
+    )
+    VALUES ($1,$2,$3,$4)
+    `,
+    [
+      user.id,
+      phone,
+      otpHash,
+      expiresAt,
+    ]
+  );
+
+  // Send SMS
+  await sendOTP(phone, otp);
+
+  return {
+    success: true,
+    message: "Password reset OTP sent successfully."
+  };
+
+};
+
+
+export const resetPasswordService = async ({
+  phone,
+  otp,
+  newPassword,
+}) => {
+  const client = await pool.connect();
+
+  let transactionStarted = false;
+
+  try {
+    if (!phone || !otp || !newPassword) {
+      throw new Error(
+        "Phone number, OTP and new password are required"
+      );
+    }
+
+    // Get latest password reset OTP
+    const result = await client.query(
+      `
+      SELECT *
+      FROM password_reset_tokens
+      WHERE phone = $1
+      ORDER BY created_at DESC
+      LIMIT 1
+      `,
+      [phone]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error("OTP not found");
+    }
+
+    const resetToken = result.rows[0];
+
+    // OTP expired
+    if (new Date() > resetToken.expires_at) {
+      throw new Error("OTP has expired");
+    }
+
+    // Too many attempts
+    if (resetToken.attempts >= 5) {
+      throw new Error(
+        "Too many invalid attempts. Please request a new OTP."
+      );
+    }
+
+    // Verify OTP
+    const isValidOTP = await bcrypt.compare(
+      otp,
+      resetToken.otp_hash
+    );
+
+    if (!isValidOTP) {
+
+      const attempts = resetToken.attempts + 1;
+
+      if (attempts >= 5) {
+
+        await client.query(
+          `
+          DELETE FROM password_reset_tokens
+          WHERE id = $1
+          `,
+          [resetToken.id]
+        );
+
+        throw new Error(
+          "Too many invalid attempts. Please request a new OTP."
+        );
+      }
+
+      await client.query(
+        `
+        UPDATE password_reset_tokens
+        SET attempts = attempts + 1
+        WHERE id = $1
+        `,
+        [resetToken.id]
+      );
+
+      throw new Error("Invalid OTP");
+    }
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    // Begin transaction
+    await client.query("BEGIN");
+    transactionStarted = true;
+
+    // Update password
+    await client.query(
+      `
+      UPDATE users
+      SET password_hash = $1,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+      `,
+      [
+        passwordHash,
+        resetToken.user_id,
+      ]
+    );
+
+    // Delete password reset OTP
+    await client.query(
+      `
+      DELETE FROM password_reset_tokens
+      WHERE id = $1
+      `,
+      [resetToken.id]
+    );
+
+    // Logout from all devices
+    await client.query(
+      `
+      DELETE FROM refresh_tokens
+      WHERE user_id = $1
+      `,
+      [resetToken.user_id]
+    );
+
+    await client.query("COMMIT");
+    transactionStarted = false;
+
+    return {
+      success: true,
+      message:
+        "Password reset successfully. Please login again.",
+    };
+
+  } catch (error) {
+
+    if (transactionStarted) {
+      await client.query("ROLLBACK");
+    }
+
+    throw error;
+
+  } finally {
+
+    client.release();
+
+  }
+};
+
+
 export const logoutUser = async (refreshToken) => {
 
     if (!refreshToken) {

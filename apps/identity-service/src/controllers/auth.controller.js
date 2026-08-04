@@ -1,6 +1,6 @@
 //Controller → Receives the request and sends the response.
 
-import { registerUser, loginUser,refreshAccessToken,logoutUser,verifyPhone,resendOTPService} from "../services/auth.service.js";
+import { registerUser, loginUser,refreshAccessToken,logoutUser,verifyPhone,resendOTPService,forgotPasswordService,resetPasswordService} from "../services/auth.service.js";
 
 
 
@@ -116,6 +116,48 @@ export const refresh = async (req, res) => {
     });
   }
 };
+
+
+
+export const forgotPassword = async (req, res) => {
+
+  try {
+
+    const result = await forgotPasswordService(req.body);
+
+    res.status(200).json(result);
+
+  } catch (error) {
+
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
+
+};
+
+
+export const resetPassword = async (req, res) => {
+
+  try {
+
+    const result = await resetPasswordService(req.body);
+
+    res.status(200).json(result);
+
+  } catch (error) {
+
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
+
+};
+
 
 
 export const logout = async (req, res) => {
