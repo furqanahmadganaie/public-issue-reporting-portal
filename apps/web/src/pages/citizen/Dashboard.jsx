@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import authService from "../../services/auth.service";
 import useAuth from "../../hooks/useAuth";
 
+
 const Dashboard = () => {
   const navigate = useNavigate();
 
@@ -11,20 +12,20 @@ const Dashboard = () => {
 
 
   const handleLogout = async () => {
-  try {
-    const response = await authService.logout();
+    try {
+      const response = await authService.logout();
 
-    toast.success(response.data.message);
-  } catch (error) {
-    console.error(error);
-  } finally {
-    logout();
+      toast.success(response.data.message);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      logout();
 
-    navigate("/login", {
-      replace: true,
-    });
-  }
-};
+      navigate("/login", {
+        replace: true,
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -82,9 +83,13 @@ const Dashboard = () => {
                     Create a new public issue.
                   </p>
 
-                  <button className="btn btn-outline">
+                  <button
+                    className="btn"
+                    onClick={() => navigate("/report-issue")}
+                  >
                     Create
                   </button>
+                  
                 </div>
               </div>
 
@@ -98,9 +103,13 @@ const Dashboard = () => {
                     View your submitted issues.
                   </p>
 
-                  <button className="btn btn-outline">
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => navigate("/my-issues")}
+                  >
                     View
                   </button>
+                  
                 </div>
               </div>
 
@@ -114,9 +123,13 @@ const Dashboard = () => {
                     Manage your profile.
                   </p>
 
-                  <button className="btn btn-outline">
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => navigate("/profile")}
+                  >
                     Open
                   </button>
+                  
                 </div>
               </div>
 
