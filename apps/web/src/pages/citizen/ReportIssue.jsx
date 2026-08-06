@@ -15,6 +15,7 @@ const ReportIssue = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
     reset,
   } = useForm();
@@ -75,6 +76,7 @@ const ReportIssue = () => {
               images={images}
               setImages={setImages}
               loading={loading}
+              setValue={setValue}
             />
 
           </div>

@@ -1,3 +1,23 @@
 @import "tailwindcss";
 
 @plugin "daisyui";
+
+
+/* ===========================
+   Leaflet Z-Index Fix
+=========================== */
+
+.leaflet-container {
+  z-index: 0 !important;
+}
+
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom,
+.leaflet-control,
+.leaflet-marker-pane,
+.leaflet-overlay-pane,
+.leaflet-popup-pane,
+.leaflet-tooltip-pane {
+  z-index: 1 !important;
+}

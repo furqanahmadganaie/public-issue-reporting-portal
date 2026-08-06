@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 
 import { BrowserRouter } from "react-router-dom";
 
+
 import {
   QueryClient,
   QueryClientProvider,
@@ -12,6 +13,9 @@ import {
 import { Toaster } from "react-hot-toast";
 
 import "./index.css";
+import "leaflet/dist/leaflet.css";
+import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css"
+import "leaflet-defaulticon-compatibility";
 
 import App from "./App";
 
