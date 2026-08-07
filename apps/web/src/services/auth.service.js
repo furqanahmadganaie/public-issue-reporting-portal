@@ -1,5 +1,6 @@
 // This file only calls backend APIs.
 import axiosInstance from "../api/axios";
+import axiosPrivate from "../api/axiosPrivate";
 
 const authService = {
   register(data) {
@@ -27,11 +28,11 @@ const authService = {
   },
 
   refreshToken() {
-    return axiosInstance.post("/auth/refresh");
+    return axiosPrivate.post("/auth/refresh");
   },
 
   logout() {
-    return axiosInstance.post("/auth/logout");
+    return axiosPrivate.post("/auth/logout");
   },
 };
 

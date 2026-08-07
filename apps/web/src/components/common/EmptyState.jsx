@@ -1,26 +1,33 @@
-import { Link } from "react-router-dom";
+import { FaInbox } from "react-icons/fa";
 
-const EmptyState = () => {
+const EmptyState = ({
+  title,
+  description,
+}) => {
   return (
-    <div className="card bg-base-100 shadow-xl">
-      <div className="card-body text-center">
+    <div className="text-center">
 
-        <h2 className="text-2xl font-bold">
-          No Issues Found
-        </h2>
+      <div className="flex justify-center mb-6">
 
-        <p className="text-gray-500">
-          You haven't reported any public issues yet.
-        </p>
+        <div className="rounded-full bg-base-300 p-6">
 
-        <Link
-          to="/report-issue"
-          className="btn btn-primary mt-4"
-        >
-          Report Your First Issue
-        </Link>
+          <FaInbox
+            size={40}
+            className="text-base-content/40"
+          />
+
+        </div>
 
       </div>
+
+      <h2 className="text-3xl font-bold">
+        {title}
+      </h2>
+
+      <p className="mt-3 text-base-content/60">
+        {description}
+      </p>
+
     </div>
   );
 };

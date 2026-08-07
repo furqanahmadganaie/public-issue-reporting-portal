@@ -25,6 +25,11 @@ const Login = () => {
     try {
       const response = await authService.login(data);
 
+
+      console.log("Full Response:", response.data);
+
+      console.log("User Object:", response.data.data.user);
+
       const { user, accessToken } = response.data.data;
 
       login({
@@ -33,12 +38,32 @@ const Login = () => {
       });
 
       toast.success(response.data.message);
+   console.log(user);
+      // Redirect based on role
+      if (user.roles.includes("Citizen")) {
+        navigate("/dashboard");
+      } else if (
+        user.roles.includes("Municipal Officer")
+      ) {
+        navigate("/officer/dashboard");
+      } else if (user.roles.includes("Admin")) {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/login");
+      }
 
-      navigate("/dashboard");
+
+
+
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Login failed"
-      );
+      console.error("LOGIN ERROR:", error);
+  console.error(error.stack);
+
+  toast.error(
+    error.response?.data?.message ||
+    error.message ||
+    "Login failed"
+  );
     }
   };
 

@@ -1,7 +1,9 @@
 const Loader = () => {
   return (
-    <div className="flex justify-center items-center py-20">
-      <span className="loading loading-spinner loading-lg"></span>
+    <div className="min-h-[60vh] flex justify-center items-center">
+
+      <span className="loading loading-spinner loading-lg text-primary"></span>
+
     </div>
   );
 };
