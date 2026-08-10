@@ -1,231 +1,152 @@
 import { useParams } from "react-router-dom";
-
+import { useQuery } from "@tanstack/react-query";
 
 import officerService from "../../services/officer.service";
 
 import Loader from "../../components/common/Loader";
+import Map from "../../components/common/Map";
+
 import StatusBadge from "../../components/issue/StatusBadge";
 import ImageGallery from "../../components/issue/ImageGallery";
-import Map from "../../components/common/Map";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { toast } from "react-hot-toast";
-import getCurrentLocation from "../../utils/getCurrentLocation";
-import LocationLoader from "../../components/common/LocationLoader";
+
+import OfficerActionPanel from "../../components/officer/OfficerActionPanel";
 
 const OfficerIssueDetails = () => {
-    const queryClient = useQueryClient();
-    const { id } = useParams();
+  const { id } = useParams();
 
-    const acceptMutation = useMutation({
-        mutationFn: async () => {
+  const {
+    data: issue,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["officer-issue", id],
 
-            const location =
-                await getCurrentLocation();
+    queryFn: async () => {
+      const response =
+        await officerService.getIssueDetails(id);
 
-            return officerService.acceptIssue(id, {
-                remark: "Issue accepted.",
+      return response.data.data;
+    },
+  });
 
-                latitude: location.latitude,
+  if (isLoading) return <Loader />;
 
-                longitude: location.longitude,
-            });
-
-        },
-
-        onSuccess: () => {
-
-            toast.success("Issue accepted successfully.");
-
-            queryClient.invalidateQueries({
-                queryKey: ["officer-issue", id],
-            });
-
-            queryClient.invalidateQueries({
-                queryKey: ["pending-issues"],
-            });
-
-            queryClient.invalidateQueries({
-                queryKey: ["dashboard"],
-            });
-
-        },
-
-        onError: (error) => {
-
-            toast.error(
-                error.message ||
-                error.response?.data?.message ||
-                "Unable to accept issue."
-            );
-
-        },
-    });
-
-
-
-    const {
-        data: issue,
-        isLoading,
-        isError,
-    } = useQuery({
-        queryKey: ["officer-issue", id],
-
-        queryFn: async () => {
-            const response =
-                await officerService.getIssueDetails(id);
-
-            return response.data.data;
-        },
-    });
-
-    if (isLoading) return <Loader />;
-
-    if (isError) {
-        return (
-            <div className="alert alert-error">
-                Failed to load issue.
-            </div>
-        );
-    }
-
-    if (acceptMutation.isPending) {
-        return <LocationLoader />;
-    }
-
+  if (isError) {
     return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="alert alert-error shadow-lg">
+          Failed to load issue.
+        </div>
+      </div>
+    );
+  }
 
-        <div className="min-h-screen bg-base-200 px-10 py-8">
+  return (
+    <div className="min-h-screen bg-base-200 px-10 py-8">
 
-            <div className="card bg-base-100 shadow-xl">
+      <div className="card bg-base-100 shadow-xl">
 
-                <div className="card-body">
+        <div className="card-body">
 
-                    <div className="flex justify-between items-center">
+          {/* Header */}
 
-                        <h1 className="text-4xl font-bold">
+          <div className="flex items-center justify-between">
 
-                            {issue.title}
+            <h1 className="text-4xl font-bold">
+              {issue.title}
+            </h1>
 
-                        </h1>
+            <StatusBadge status={issue.status} />
 
-                        <StatusBadge
-                            status={issue.status}
-                        />
+          </div>
 
-                    </div>
+          <div className="divider"></div>
 
-                    <div className="divider"></div>
+          {/* Images */}
 
-                    <ImageGallery
-                        images={issue.images}
-                    />
+          <ImageGallery images={issue.images} />
 
-                    <div className="divider"></div>
+          <div className="divider"></div>
 
-                    <h2 className="text-xl font-bold">
+          {/* Description */}
 
-                        Description
+          <div>
 
-                    </h2>
+            <h2 className="text-xl font-bold mb-2">
+              Description
+            </h2>
 
-                    <p>
+            <p>{issue.description}</p>
 
-                        {issue.description}
+          </div>
 
-                    </p>
+          {/* Details */}
 
-                    <div className="grid md:grid-cols-2 gap-6 mt-8">
+          <div className="grid gap-6 mt-8 md:grid-cols-2">
 
-                        <div>
+            <div>
+              <h3 className="font-semibold">
+                Village
+              </h3>
 
-                            <strong>Village</strong>
-
-                            <p>{issue.village}</p>
-
-                        </div>
-
-                        <div>
-
-                            <strong>Address</strong>
-
-                            <p>{issue.address}</p>
-
-                        </div>
-
-                        <div>
-
-                            <strong>Priority</strong>
-
-                            <p>{issue.priority}</p>
-
-                        </div>
-
-                        <div>
-
-                            <strong>Reported On</strong>
-
-                            <p>
-                                {new Date(issue.created_at).toLocaleString()}
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                    <div className="divider"></div>
-
-                    <h2 className="text-xl font-bold mb-4">
-
-                        Issue Location
-
-                    </h2>
-
-                    <Map
-
-                        latitude={issue.latitude}
-
-                        longitude={issue.longitude}
-
-                    />
-
-                    <div className="divider"></div>
-
-                    {/* Officer Actions */}
-
-                    <div className="mt-8 rounded-2xl border border-base-300 bg-base-200 p-6">
-
-                        <h2 className="text-xl font-bold mb-2">
-                            Officer Action
-                        </h2>
-
-                        <p className="text-base-content/60 mb-5">
-                            Accept this issue to start working on it.
-                            Your current GPS location will be captured
-                            automatically.
-                        </p>
-
-                        {issue.status === "Pending" && (
-                            <button
-                                className="btn btn-primary rounded-2xl px-8"
-                                onClick={() =>
-                                    acceptMutation.mutate()
-                                }
-                            >
-                                Accept Issue
-                            </button>
-                        )}
-
-                    </div>
-
-
-                </div>
-
+              <p>{issue.village}</p>
             </div>
+
+            <div>
+              <h3 className="font-semibold">
+                Address
+              </h3>
+
+              <p>{issue.address}</p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold">
+                Priority
+              </h3>
+
+              <p>{issue.priority}</p>
+            </div>
+
+            <div>
+              <h3 className="font-semibold">
+                Reported On
+              </h3>
+
+              <p>
+                {new Date(
+                  issue.created_at
+                ).toLocaleString()}
+              </p>
+            </div>
+
+          </div>
+
+          <div className="divider"></div>
+
+          {/* Map */}
+
+          <h2 className="text-xl font-bold mb-4">
+            Issue Location
+          </h2>
+
+          <Map
+            latitude={issue.latitude}
+            longitude={issue.longitude}
+          />
+
+          <div className="divider"></div>
+
+          {/* Dynamic Officer Actions */}
+
+          <OfficerActionPanel issue={issue} />
 
         </div>
 
-    );
+      </div>
 
+    </div>
+  );
 };
 
 export default OfficerIssueDetails;
