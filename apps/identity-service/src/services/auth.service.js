@@ -11,11 +11,26 @@ import { sendOTP } from "./sms.service.js"; // Import the sendOTP function from 
 
 
 export const registerUser = async (userData) => {
+
   const client = await pool.connect();
-  // The purpose of this line is to obtain a client connection from the connection pool. This client will be used to execute queries against the database. By using a client from the pool, the application can efficiently manage database connections, allowing for better performance and resource utilization. It also enables the use of transactions, as a transaction must run on a single database connection.
-   //Because a transaction must run on one database connection. So you borrow one connection:
+  // The purpose of this line is to obtain a client connection from the connection pool. 
+  // This client will be used to execute queries against the database. 
+  // By using a client from the pool, the application can efficiently manage database 
+  // connections, allowing for better performance and resource utilization.
+  //  It also enables the use of transactions, as a transaction must run
+  //  on a single database connection.
+   //Because a transaction must run on one database connection. So you
+   //  borrow one connection:
 
   try {
+   // this simple method insted of ths we use object destructureing {}
+//     const first_name = userData.first_name;
+// const email = userData.email;
+// const password = userData.password;
+// const phone = userData.phone;   
+
+// extract the user data 
+
     const { first_name, email, password, phone } = userData;
 
     if (!first_name || !email || !password) {
@@ -25,6 +40,9 @@ export const registerUser = async (userData) => {
     if (!validator.isEmail(email)) {
       throw new Error("Invalid email address");
     }
+  
+    // check whether user already exists 
+    // existing user will return like this if user exists  id rows[0] [{ id:15 }]
 
     const existingUser = await client.query(
       "SELECT id FROM users WHERE email = $1",
@@ -37,30 +55,38 @@ export const registerUser = async (userData) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
+
     // Start Transaction
-    await client.query("BEGIN");
+    await client.query("BEGIN");  //  Start a group of database operations that should succeed or fail together."
 
     const result = await client.query(
       `
       INSERT INTO users
       (first_name, email, password_hash, phone)
       VALUES ($1,$2,$3,$4)
-      RETURNING id, first_name, email, phone, created_at
+      RETURNING id, first_name, email, phone, created_at 
       `,
-      [first_name, email, passwordHash, phone]
+      [first_name, email, passwordHash, phone]  
+      // returning gives columns back after successful .
     );
 
-    // Assign the "Citizen" role to the newly registered user. This involves querying the roles table to get the id of the "Citizen" role and then inserting a record into the user_roles table to associate the new user with that role. This step is crucial for implementing role-based access control in the application, ensuring that users have appropriate permissions based on their assigned roles.
+    // Assign the "Citizen" role to the newly registered user. This involves querying the roles table
+    //  to get the id of the "Citizen" role and then inserting a record into the user_roles 
+    // table to associate the new user with that role. 
+    // This step is crucial for implementing role-based access control 
+    // in the application, ensuring that users have appropriate permissions based on their assigned roles.
+
+// it return roleresult[0] id:1
     const roleResult = await client.query(
       `
       SELECT id
       FROM roles
-      WHERE name = $1
+      WHERE name = $1 
       `,
       ["Citizen"]
     );
 
-    const roleId = roleResult.rows[0].id;
+    const roleId = roleResult.rows[0].id; // to get the role id 
 
     await client.query(
       `
@@ -79,7 +105,7 @@ const otp = generateOTP();
 // Hash OTP
 const otpHash = await bcrypt.hash(otp, 10);
 
-// OTP expires after 10 minutes
+// OTP expires after 5 minutes
 const expiresAt = new Date();
 expiresAt.setMinutes(expiresAt.getMinutes() + 5);
 
@@ -95,18 +121,23 @@ await client.query(
     phone,
     otpHash,
     expiresAt,
-  ]
+  ]   // values into th colums 
 );
+
+//  $1 → result.rows[0].id
+// $2 → phone
+// $3 → otpHash
+// $4 → expiresAt
 
 
 
  // Commit Transaction
- await client.query("COMMIT");
+ await client.query("COMMIT"); // 
 
 // Send OTP after successful commit
 await sendOTP(phone, otp);
 
-return result.rows[0];
+return result.rows[0]; // 
 
 
   } catch (error) {
@@ -117,6 +148,18 @@ return result.rows[0];
     throw error;
 
   } finally {
+    // release the database connect return connection to pool If you don't release connections properly,
+    //  eventually your pool can run out of available connections.
+                                                      //  pool
+                                                      //  ↓
+                                                      // borrow connection
+                                                      //  ↓
+                                                      // use connection
+                                                      //  ↓
+                                                      // finish
+                                                      //  ↓
+                                                      // return connection
+
 
     client.release();
 
@@ -145,12 +188,14 @@ export const verifyPhone = async ({ phone, otp }) => {
       `,
       [phone]
     );
+   //   `SELECT ... WHERE phone = '${phone}'`   construction sql  abovr more safe 
 
     if (result.rows.length === 0) {
       throw new Error("OTP not found");
     }
 
     const verification = result.rows[0];
+    // console.log(verification);
 
     // Check OTP expiry
     if (new Date() > verification.expires_at) {
@@ -162,7 +207,8 @@ export const verifyPhone = async ({ phone, otp }) => {
       throw new Error("Too many invalid attempts. Please request a new OTP.");
     }
 
-    // Compare OTP with hashed OTP
+    // Compare OTP with hashed OTP   Take the OTP the user entered and check whether it matches this stored bcrypt hash.
+
     const isValidOTP = await bcrypt.compare(
       otp,
       verification.otp_hash
@@ -374,7 +420,7 @@ export const loginUser = async ({ email, password }) => {
   `,
   [user.id]
 );
-
+  //    map(role => role.name); This converts the database result into a simple array of role names.
 const roles = roleResult.rows.map(role => role.name);
 
 
@@ -416,7 +462,12 @@ const decodedRefreshToken = jwt.verify(
 const expiresAt = new Date(decodedRefreshToken.exp * 1000);
 
 
-// Store the refresh token in the database for future validation and management. The refresh token is associated with the user's id and has an expiration date set to 7 days from the current date. This allows the system to manage refresh tokens, including revoking them if necessary, and provides a way for users to obtain new access tokens without having to log in again.
+// Store the refresh token in the database for future validation and management. 
+// The refresh token is associated with the user's id and has an expiration date 
+// set to 7 days from the current date. 
+// This allows the system to manage refresh tokens, including revoking them if 
+// necessary, and provides a way for users to obtain new access tokens without
+//  having to log in again.
 await pool.query(
   `
     INSERT INTO refresh_tokens
@@ -436,6 +487,7 @@ return {
     first_name: user.first_name,
     email: user.email,
     phone: user.phone,
+    roles: roles, // Include the user's roles in the returned user object. This allows the frontend or other parts of the application to easily access the user's roles for authorization checks and UI rendering based on the user's permissions.
   },
   accessToken,
   refreshToken,
@@ -469,10 +521,52 @@ export const refreshAccessToken = async (refreshToken) => {
     throw new Error("Invalid refresh token");
   }
 
+
+
+
+  // Get user details
+  const userResult = await pool.query(
+    `
+    SELECT
+      id,
+      first_name,
+      email,
+      phone
+    FROM users
+    WHERE id = $1
+    `,
+    [decoded.id]
+  );
+
+
+   if (userResult.rows.length === 0) {
+    throw new Error("User not found");
+  }
+
+  const user = userResult.rows[0];
+
+
+   // Get user roles
+  const roleResult = await pool.query(
+    `
+    SELECT r.name
+    FROM roles r
+    INNER JOIN user_roles ur
+      ON ur.role_id = r.id
+    WHERE ur.user_id = $1
+    `,
+    [user.id]
+  );
+
+  const roles = roleResult.rows.map((role) => role.name);
+  
+
   // Generate new access token
   const accessToken = jwt.sign(
     {
-      id: decoded.id,
+      id: user.id,
+      email: user.email,
+      roles: roles, // Include the user's roles in the JWT payload for authorization purposes. This allows the application to check the user's roles when accessing protected routes or performing actions that require specific permissions.
     },
     process.env.JWT_SECRET,
     {
@@ -480,7 +574,13 @@ export const refreshAccessToken = async (refreshToken) => {
     }
   );
 
-  return accessToken;
+  return { accessToken , 
+    user :{
+      ... user, 
+      roles,
+    },
+  };
+
 };
 
 

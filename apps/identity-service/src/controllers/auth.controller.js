@@ -6,7 +6,10 @@ import { registerUser, loginUser,refreshAccessToken,logoutUser,verifyPhone,resen
 
 export const register = async (req, res) => {
   try {
-    const user = await registerUser(req.body);
+    const user = await registerUser(req.body);  // here is regration data and handle regis..
+    // Call the registerUser function from the auth.service.js file,
+    //  passing the request body (req.body) as an argument. This function handles the logic for registering
+    //  a new user, such as validating input, hashing passwords, and saving the user to the database.
 
     res.status(201).json({
       success: true,
@@ -14,6 +17,7 @@ export const register = async (req, res) => {
       data: user,
     });
   } catch (error) {
+     console.error("Register Controller Error:", error);
     res.status(400).json({
       success: false,
       message: error.message,
@@ -22,9 +26,12 @@ export const register = async (req, res) => {
 };
 
 
+
+
 export const verifyPhoneNumber = async (req, res) => {
   try {
     const result = await verifyPhone(req.body);
+
 
     res.status(200).json(result);
 
@@ -40,7 +47,8 @@ export const verifyPhoneNumber = async (req, res) => {
 
 export const resendOTP = async (req, res) => {
   try {
-    const result = await resendOTPService(req.body);
+    //   coll the  resend service and parameter will  phone number from user 
+    const result = await resendOTPService(req.body);  
 
     res.status(200).json(result);
 
@@ -59,9 +67,10 @@ export const login = async (req, res) => {
   try {
     const tokens = await loginUser(req.body);
 
+ //access token json only 
 
       res.cookie("refreshToken", tokens.refreshToken, {
-      httpOnly: true,
+      httpOnly: true, //  JavaScript running in the browser cannot directly read this cookie.
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -100,14 +109,12 @@ export const refresh = async (req, res) => {
 
     const refreshToken = req.cookies.refreshToken; // Get the refresh token from the cookie
 
-    const accessToken = await refreshAccessToken(refreshToken);
+    const result = await refreshAccessToken(refreshToken);
 
     res.status(200).json({
       success: true,
       message: "Access token refreshed successfully",
-      data: {
-        accessToken,
-      },
+      data: result,
     });
   } catch (error) {
     res.status(401).json({

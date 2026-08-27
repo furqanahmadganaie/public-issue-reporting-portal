@@ -11,6 +11,7 @@ import pg from "pg";
 const { Pool } = pg;  
 //pg has multiple exports, including the Pool class , client,types,defaults . The
 // Destructuring assignment to extract the Pool class from the pg module. This allows us to create a new instance of a connection pool to manage database connections.
+
 // what is destructuring assignment? It is a JavaScript expression that allows you to unpack values from arrays or properties from objects into distinct variables. In this case, it extracts the Pool class from the pg module, enabling us to create a new instance of a connection pool for managing database connections.
 
 // Pool is js class job is to manage a pool of connections to the database, allowing for efficient reuse of connections and better performance in applications that require frequent database access. It handles connection creation, management, and cleanup automatically, making it easier to work with databases in a scalable way.
@@ -22,7 +23,15 @@ const { Pool } = pg;
 // console.log(process.env.DB_NAME);
 // console.log(process.env.DB_USER);
 // console.log(process.env.DB_PASSWORD);
-// console.log(typeof process.env.DB_PASSWORD);
+// // console.log(typeof process.env.DB_PASSWORD);
+
+// pg provides that communication.
+// Node.js
+//    ↓
+//    pg
+//    ↓
+// PostgreSQL
+
 
 const pool = new Pool({
   host: process.env.DB_HOST,

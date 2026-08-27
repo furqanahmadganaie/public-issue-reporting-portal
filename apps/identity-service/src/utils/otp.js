@@ -1,5 +1,6 @@
-import crypto from "crypto";
-
+import crypto from "crypto"; 
+// crypto is used to  generate a cryptographically strong random number.
+    
 export const generateOTP = (length = 6) => {
   let otp = "";
 
