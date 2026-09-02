@@ -4,7 +4,11 @@ import {
   Marker,
 } from "react-leaflet";
 
-const Map = ({ latitude, longitude }) => {
+const Map = ({
+  latitude,
+  longitude,
+  className = "h-96",
+}) => {
   return (
     <div className="relative z-0 w-full">
       <MapContainer
@@ -14,7 +18,7 @@ const Map = ({ latitude, longitude }) => {
         ]}
         zoom={15}
         scrollWheelZoom={true}
-        className="h-96 w-full rounded-xl"
+        className={`${className} w-full rounded-lg`}
       >
         <TileLayer
           attribution="&copy; OpenStreetMap contributors"

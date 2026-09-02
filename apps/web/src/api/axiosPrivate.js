@@ -1,8 +1,9 @@
-import axios from "./axios";
+import axios from "axios";
+import axiosInstance from "./axios";
 import tokenManager from "../utils/tokenManager";
 
 const axiosPrivate = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL1,
   withCredentials: true,
 });
 
@@ -34,7 +35,7 @@ axiosPrivate.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshResponse = await axios.post(
+        const refreshResponse = await axiosInstance.post(
           "/auth/refresh"
         );
 
@@ -49,7 +50,9 @@ axiosPrivate.interceptors.response.use(
       } catch (refreshError) {
         tokenManager.clearToken();
 
-        window.location.href = "/login";
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
 
         return Promise.reject(refreshError);
       }

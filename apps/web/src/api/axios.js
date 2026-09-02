@@ -1,7 +1,7 @@
 import axios from "axios"; // Axios is a promise-based HTTP client for the browser and Node.js. It provides an easy-to-use API to send asynchronous HTTP requests to REST endpoints and perform CRUD operations. It can be used in both frontend and backend applications.
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL1,
   withCredentials: true,  // This allows cookies to be sent with requests 
   headers: {
     "Content-Type": "application/json", // This sets the default Content-Type header for all requests to "application/json", indicating that the request body will be in JSON format.

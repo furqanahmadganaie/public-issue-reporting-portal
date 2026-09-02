@@ -1,5 +1,6 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { FaArrowLeft } from "react-icons/fa";
 
 import officerService from "../../services/officer.service";
 
@@ -13,6 +14,7 @@ import OfficerActionPanel from "../../components/officer/OfficerActionPanel";
 
 const OfficerIssueDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const {
     data: issue,
@@ -43,6 +45,15 @@ const OfficerIssueDetails = () => {
 
   return (
     <div className="min-h-screen bg-base-200 px-10 py-8">
+
+      <button
+        className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800"
+        onClick={() => navigate(-1)}
+        type="button"
+      >
+        <FaArrowLeft size={12} />
+        Back
+      </button>
 
       <div className="card bg-base-100 shadow-xl">
 

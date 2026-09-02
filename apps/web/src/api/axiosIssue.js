@@ -1,8 +1,9 @@
 import axios from "axios";
+import axiosInstance from "./axios";
 import tokenManager from "../utils/tokenManager";
 
 const axiosIssue = axios.create({
-  baseURL: "http://localhost:3002/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL2,
   withCredentials: true,
 });
 
@@ -15,5 +16,44 @@ axiosIssue.interceptors.request.use((config) => {
 
   return config;
 });
+
+axiosIssue.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true;
+
+      try {
+        const refreshResponse = await axiosInstance.post(
+          "/auth/refresh"
+        );
+
+        const newAccessToken =
+          refreshResponse.data.data.accessToken;
+
+        tokenManager.setToken(newAccessToken);
+
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+
+        return axiosIssue(originalRequest);
+      } catch (refreshError) {
+        tokenManager.clearToken();
+
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export default axiosIssue;

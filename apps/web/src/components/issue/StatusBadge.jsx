@@ -1,6 +1,7 @@
 import {
   FaCheckCircle,
   FaClipboardList,
+  FaTimesCircle,
   FaSpinner,
   FaTasks,
 } from "react-icons/fa";
@@ -28,6 +29,12 @@ const statusConfig = {
     icon: FaCheckCircle,
     classes:
       "bg-green-100 text-green-700 border-green-300",
+  },
+
+  Rejected: {
+    icon: FaTimesCircle,
+    classes:
+      "bg-rose-100 text-rose-700 border-rose-300",
   },
 };
 

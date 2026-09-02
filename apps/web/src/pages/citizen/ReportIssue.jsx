@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 
 import IssueForm from "../../components/issue/IssueForm";
+import Navbar from "../../components/common/Navbar";
 import issueService from "../../services/issue.service";
 
 const ReportIssue = () => {
@@ -57,17 +58,23 @@ const ReportIssue = () => {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 py-10">
-      <div className="max-w-4xl mx-auto">
+    <div className="h-screen overflow-hidden bg-[#f5f7fb] text-slate-950">
+      <Navbar />
 
-        <div className="card bg-base-100 shadow-xl">
+      <main className="mx-auto h-[calc(100vh-73px)] w-full max-w-[1700px] overflow-hidden px-3 py-3 sm:px-4 lg:px-5">
 
-          <div className="card-body">
+        <section>
 
-            <h2 className="text-3xl font-bold mb-6">
+          <div className="mb-3">
+            <h2 className="text-2xl font-black tracking-normal text-slate-950">
               Report Public Issue
             </h2>
+            <p className="mt-1 max-w-4xl text-sm leading-5 text-slate-600">
+              Provide details about the issue you want to report. Our team will review it and take necessary action.
+            </p>
+          </div>
 
+          <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-[0_18px_60px_rgba(15,23,42,0.08)] lg:p-4">
             <IssueForm
               register={register}
               handleSubmit={handleSubmit}
@@ -77,13 +84,13 @@ const ReportIssue = () => {
               setImages={setImages}
               loading={loading}
               setValue={setValue}
+              onCancel={() => navigate("/dashboard")}
             />
-
           </div>
 
-        </div>
+        </section>
 
-      </div>
+      </main>
     </div>
   );
 };

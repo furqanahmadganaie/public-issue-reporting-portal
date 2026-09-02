@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { FaArrowLeft } from "react-icons/fa";
 
 import officerService from "../../services/officer.service";
 
@@ -10,6 +12,8 @@ import PageLayout from "../../components/ui/PageLayout";
 import PageHeader from "../../components/ui/PageHeader";
 
 const PendingIssues = () => {
+  const navigate = useNavigate();
+
   const {
     data: issues = [],
     isLoading,
@@ -32,6 +36,14 @@ const PendingIssues = () => {
   if (isError) {
     return (
       <PageLayout>
+        <button
+          className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800"
+          onClick={() => navigate("/officer/dashboard")}
+          type="button"
+        >
+          <FaArrowLeft size={12} />
+          Back to Dashboard
+        </button>
         <div className="flex justify-center items-center min-h-[60vh]">
           <div className="alert alert-error shadow-lg max-w-md">
             <span>Failed to load pending issues.</span>
@@ -44,6 +56,14 @@ const PendingIssues = () => {
   if (issues.length === 0) {
     return (
       <PageLayout>
+        <button
+          className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800"
+          onClick={() => navigate("/officer/dashboard")}
+          type="button"
+        >
+          <FaArrowLeft size={12} />
+          Back to Dashboard
+        </button>
         <div className="flex justify-center items-center min-h-[60vh]">
           <EmptyState
             title="No Pending Issues"
@@ -56,6 +76,15 @@ const PendingIssues = () => {
 
   return (
     <PageLayout>
+
+      <button
+        className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800"
+        onClick={() => navigate("/officer/dashboard")}
+        type="button"
+      >
+        <FaArrowLeft size={12} />
+        Back to Dashboard
+      </button>
 
       <PageHeader
         title="Pending Issues"

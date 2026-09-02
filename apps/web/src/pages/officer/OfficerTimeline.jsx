@@ -1,5 +1,6 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { FaArrowLeft } from "react-icons/fa";
 
 import officerService from "../../services/officer.service";
 
@@ -11,6 +12,7 @@ import TimelineItem from "../../components/officer/TimelineItem";
 const OfficerTimeline = () => {
 
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const {
     data: timeline = [],
@@ -31,6 +33,17 @@ const OfficerTimeline = () => {
 
   });
 
+  const backButton = (
+    <button
+      className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800"
+      onClick={() => navigate(-1)}
+      type="button"
+    >
+      <FaArrowLeft size={12} />
+      Back
+    </button>
+  );
+
   if (isLoading) {
     return <Loader />;
   }
@@ -39,12 +52,16 @@ const OfficerTimeline = () => {
 
     return (
 
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-base-200 px-10 py-8">
 
-        <div className="alert alert-error shadow-lg">
+        {backButton}
 
-          Failed to load issue timeline.
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="alert alert-error shadow-lg">
 
+            Failed to load issue timeline.
+
+          </div>
         </div>
 
       </div>
@@ -57,10 +74,14 @@ const OfficerTimeline = () => {
 
     return (
 
-      <EmptyState
-        title="No Timeline Available"
-        description="No updates have been recorded for this issue yet."
-      />
+      <div className="min-h-screen bg-base-200 px-10 py-8">
+        {backButton}
+
+        <EmptyState
+          title="No Timeline Available"
+          description="No updates have been recorded for this issue yet."
+        />
+      </div>
 
     );
 
@@ -69,6 +90,8 @@ const OfficerTimeline = () => {
   return (
 
     <div className="min-h-screen bg-base-200 px-10 py-8">
+
+      {backButton}
 
       {/* Header */}
 

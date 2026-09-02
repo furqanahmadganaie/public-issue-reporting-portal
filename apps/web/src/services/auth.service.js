@@ -28,7 +28,7 @@ const authService = {
   },
 
   refreshToken() {
-    return axiosPrivate.post("/auth/refresh");
+    return axiosInstance.post("/auth/refresh");
   },
 
   logout() {

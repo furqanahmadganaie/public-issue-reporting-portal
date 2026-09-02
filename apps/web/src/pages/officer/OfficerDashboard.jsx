@@ -50,37 +50,37 @@ const OfficerDashboard = () => {
         subtitle="Manage assigned issues, track ongoing work, and resolve public complaints efficiently."
       />
 
-      <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:gap-6 xl:grid-cols-4">
 
         <DashboardStats
           title="Pending Issues"
-          value={data.pending}
+          value={data?.pending ?? 0}
           icon={FaClipboardList}
-          color="hover:shadow-[0_0_35px_rgba(245,158,11,0.45)]"
+          color="hover:shadow-[0_20px_55px_rgba(245,158,11,0.18)]"
           to="/officer/pending"
         />
 
         <DashboardStats
           title="Assigned"
-          value={data.assigned}
+          value={data?.assigned ?? 0}
           icon={FaTasks}
-          color="hover:shadow-[0_0_35px_rgba(59,130,246,0.45)]"
+          color="hover:shadow-[0_20px_55px_rgba(37,99,235,0.18)]"
           to="/officer/assigned"
         />
 
         <DashboardStats
           title="In Progress"
-          value={data.inProgress}
+          value={data?.inProgress ?? 0}
           icon={FaTools}
-          color="hover:shadow-[0_0_35px_rgba(249,115,22,0.45)]"
+          color="hover:shadow-[0_20px_55px_rgba(14,165,233,0.18)]"
           to="/officer/in-progress"
         />
 
         <DashboardStats
           title="Resolved"
-          value={data.resolved}
+          value={data?.resolved ?? 0}
           icon={FaCheckCircle}
-          color="hover:shadow-[0_0_35px_rgba(34,197,94,0.45)]"
+          color="hover:shadow-[0_20px_55px_rgba(16,185,129,0.18)]"
           to="/officer/resolved"
         />
 
