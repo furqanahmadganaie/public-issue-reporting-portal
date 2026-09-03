@@ -1,11 +1,13 @@
+//"I received the request. Here is the data. Service, create the issue."
 import { createIssueService ,getMyIssuesService,getIssueByIdService} from "../services/issue.service.js";
 
 export const createIssue = async (req, res) => {
   try {
 
-     console.log("Body:", req.body);
+    console.log("Body:", req.body);
     console.log("Files:", req.files);
-        const issue = await createIssueService(
+      // info comming from client 
+    const issue = await createIssueService(
       req.body,
       req.files,
       req.user.id

@@ -12,7 +12,7 @@ import {
 
 
 
-export const createIssueService = async ( issueData,files,userId) => {
+ export const createIssueService = async ( issueData,files,userId) => {
 
 //   console.log("Issue Data:", issueData);
 //   console.log("Files:", files);
@@ -45,6 +45,7 @@ if (
   !address ||
   latitude === undefined ||
   longitude === undefined
+  // latitude or logitude can be zero that why  is 
 ) {
   throw new Error("All fields are required.");
 }
@@ -53,13 +54,14 @@ if (
 
   const client = await pool.connect();
 
-  const uploadedImages = [];
+  const uploadedImages = []; // array of images to keep tack of them to delete if trasaction fails 
+
 
   try {
     await client.query("BEGIN");
 
     const issue = await createIssueRepository(
-      client,
+      client, // so the repo uses same transaction connection 
       {
         title,
         description,
@@ -71,15 +73,25 @@ if (
       }
     );
 
+
+
     if (files && files.length > 0) {
+
+
       for (const file of files) {
+
+        // upload image to cloudinary 
         const uploaded = await uploadImage(
           file,
           "public-issue-reporting/issues"
         );
 
-        uploadedImages.push(uploaded);
+//  console.log(uploaded);
+        //  save uploaded imfromation for cleanup 
 
+        uploadedImages.push(uploaded);
+ 
+        // save cloundinary info in postgresql
         await createIssueImageRepository(
           client,
           issue.id,
@@ -91,16 +103,19 @@ if (
 
     await client.query("COMMIT");
 
+//  This queries the database to get the images belonging to the issue.
     const images = await getIssueImagesRepository(
   client,
   issue.id
 );
 
     return { issue,images };
+    
 
   } catch (error) {
      console.error(error);
     await client.query("ROLLBACK");
+    
 
     for (const image of uploadedImages) {
       await deleteImage(image.public_id);

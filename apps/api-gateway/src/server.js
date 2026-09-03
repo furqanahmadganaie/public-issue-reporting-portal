@@ -1,10 +1,17 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 dotenv.config(); // Load environment variables from .env file
 
 const app = express(); // Create an instance of the Express application
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 const PORT = process.env.PORT || 4000;
 
@@ -40,6 +47,16 @@ app.use(
     changeOrigin: true,
     pathRewrite: (path) => `/api/issues${path}`,
     
+  })
+);
+
+// Officer
+app.use(
+  "/api/officer",
+  createProxyMiddleware({
+    target: ISSUE_SERVICE_URL,
+    changeOrigin: true,
+    pathRewrite: (path) => `/api/officer${path}`,
   })
 );
 

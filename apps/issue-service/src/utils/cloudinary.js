@@ -3,6 +3,7 @@ import { Readable } from "stream";
 import cloudinary from "../config/cloudinary.js";
 
 export const uploadImage = (file, folder) => {
+  
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {

@@ -5,7 +5,7 @@ const authenticate = (req, res, next) => {
   // Authorization header is a standard HTTP header that is used to pass authentication credentials from the client to the server. 
   // It typically contains a token or credentials that the server can use to verify the identity of the client making the request. 
   // In this case, it is expected to contain a Bearer token, which is a type of access token used in OAuth 2.0 authentication.
-
+// console.log(authHeader) token miljaygea 
   if (!authHeader) {
     return res.status(401).json({
       success: false,
