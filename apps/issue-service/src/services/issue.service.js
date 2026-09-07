@@ -10,6 +10,8 @@ import {
   deleteImage,
 } from "../utils/cloudinary.js";
 
+import { publishEvent } from "@portal/kafka";
+
 
 
  export const createIssueService = async ( issueData,files,userId) => {
@@ -102,6 +104,21 @@ if (
     }
 
     await client.query("COMMIT");
+
+//  creates the event to be published to the kafka topic "issue.created" with the issue details and the citizen ID of the user who created the issue. 
+// This allows other services to be notified of the new issue creation. 
+
+    await publishEvent({
+  topic: "issue.created",
+  key: issue.id,
+  event: {
+    event: "ISSUE_CREATED",
+    issueId: issue.id,
+    citizenId: userId,
+    title: issue.title,
+    createdAt: new Date().toISOString(),
+  },
+});
 
 //  This queries the database to get the images belonging to the issue.
     const images = await getIssueImagesRepository(
