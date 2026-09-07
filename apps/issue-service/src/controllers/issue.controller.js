@@ -10,7 +10,8 @@ export const createIssue = async (req, res) => {
     const issue = await createIssueService(
       req.body,
       req.files,
-      req.user.id
+      req.user.id,
+      req.user.email
     );
 
     res.status(201).json({

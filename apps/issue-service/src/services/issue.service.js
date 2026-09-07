@@ -14,7 +14,7 @@ import { publishEvent } from "@portal/kafka";
 
 
 
- export const createIssueService = async ( issueData,files,userId) => {
+ export const createIssueService = async ( issueData,files,userId,citizenEmail) => {
 
 //   console.log("Issue Data:", issueData);
 //   console.log("Files:", files);
@@ -115,6 +115,7 @@ if (
     event: "ISSUE_CREATED",
     issueId: issue.id,
     citizenId: userId,
+    citizenEmail: citizenEmail,
     title: issue.title,
     createdAt: new Date().toISOString(),
   },

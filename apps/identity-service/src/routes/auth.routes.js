@@ -30,7 +30,7 @@ router.post("/resend-otp", resendOTP);
 //  checks if the user has the required role. If both conditions are met, the user can access
 //  their profile information.
 router.get(
-  "/profile",authenticate,authorize(["Citizens "]),
+  "/profile",authenticate,authorize(["Citizens"]),
   (req, res) => {
     res.status(200).json({
       success: true,

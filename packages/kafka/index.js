@@ -37,3 +37,45 @@ export const publishEvent = async ({ topic, key, event }) => {
     ],
   });
 };
+
+
+// ==================== CONSUMER ====================
+
+export const consumer = kafka.consumer({
+  groupId:
+    process.env.KAFKA_GROUP_ID ||
+    "notification-service-group",
+});
+
+export const connectKafkaConsumer = async () => {
+  await consumer.connect();
+  console.log("Kafka Consumer Connected");
+};
+
+export const subscribeToTopic = async (topic) => {
+  await consumer.subscribe({
+    topic,
+    fromBeginning: true,
+  });
+
+  console.log(`Subscribed to topic: ${topic}`);
+};
+
+export const startKafkaConsumer = async (onMessage) => {
+  await consumer.run({
+    eachMessage: async ({ topic, partition, message }) => {
+      const event = JSON.parse(message.value.toString());
+
+      await onMessage({
+        topic,
+        partition,
+        event,
+      });
+    },
+  });
+};
+
+export const disconnectKafkaConsumer = async () => {
+  await consumer.disconnect();
+  console.log("Kafka Consumer Disconnected");
+};
