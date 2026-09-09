@@ -1,6 +1,6 @@
 // Defines the endpoint
 import express from "express"; // bcz we need its Router class to create a new router instance for defining routes related to authentication.
-import { register,login,refresh,logout,verifyPhoneNumber,resendOTP,forgotPassword,resetPassword} from "../controllers/auth.controller.js";
+import { register,login,refresh,logout,verifyPhoneNumber,resendOTP,forgotPassword,resetPassword,getUserById} from "../controllers/auth.controller.js";
 import authenticate from "../middlewares/auth.middleware.js";
 import authorize from "../middlewares/authorize.middleware.js";
 
@@ -40,6 +40,7 @@ router.get(
 );
 
 router.post("/logout", logout);
+router.get("/internal/users/:id", getUserById);
 
 
 

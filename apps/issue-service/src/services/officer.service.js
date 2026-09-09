@@ -1,5 +1,6 @@
 import { pool } from "../repositories/issue.repository.js";
-
+ import axios from "axios";
+import { publishEvent } from "@portal/kafka";
 import {
   getDashboardRepository,getPendingIssuesRepository,getIssueDetailsRepository,acceptIssueRepository,createIssueUpdateRepository, getIssueByIdRepository,updateIssueStatusRepository,createIssueUpdateImageRepository,
   getIssueTimelineRepository,getAssignedIssuesRepository,getInProgressIssuesRepository,getResolvedIssuesRepository
@@ -7,6 +8,14 @@ import {
 
 import { isValidTransition } from "../utils/statusTransition.js";
 import {uploadImage,deleteImage} from "../utils/cloudinary.js";
+
+const getCitizen = async (citizenId) => {
+  const response = await axios.get(
+    `${process.env.IDENTITY_SERVICE_URL}/api/v1/auth/internal/users/${citizenId}`
+  );
+
+  return response.data.data;
+};
 
 export const getDashboardService = async (officerId) => {
   const client = await pool.connect();
@@ -81,7 +90,24 @@ export const acceptIssueService = async (
 
     await client.query("COMMIT");
 
+const citizen = await getCitizen(issue.citizen_id);
+
+await publishEvent({
+  topic: "issue.assigned",
+  key: issue.id,
+  event: {
+    event: "ISSUE_ASSIGNED",
+    issueId: issue.id,
+    citizenId: issue.citizen_id,
+    citizenEmail: citizen.email,
+    title: issue.title,
+    officerId,
+    createdAt: new Date().toISOString(),
+  },
+});
+
     return issue;
+
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -173,6 +199,34 @@ export const updateIssueStatusService = async (
     );
 
     await client.query("COMMIT");
+ 
+    //  
+
+    if (
+  status === "In Progress" ||
+  status === "Resolved"
+) {
+  const citizen = await getCitizen(issue.citizen_id);
+
+  await publishEvent({
+    topic: "issue.updated",
+    key: issueId,
+    event: {
+      event:
+        status === "In Progress"
+          ? "ISSUE_IN_PROGRESS"
+          : "ISSUE_RESOLVED",
+
+      issueId: issueId,
+      citizenId: issue.citizen_id,
+      citizenEmail: citizen.email,
+      title: issue.title,
+      officerId: officerId,
+      remark: remark,
+      createdAt: new Date().toISOString(),
+    },
+  });
+}
 
     return updatedIssue;
 

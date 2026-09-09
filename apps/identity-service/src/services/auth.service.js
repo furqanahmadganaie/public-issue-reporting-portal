@@ -429,6 +429,7 @@ const roles = roleResult.rows.map(role => role.name);
     {
       id: user.id,
       email: user.email,
+      first_name: user.first_name,
       roles: roles, // Include the user's roles in the JWT payload for authorization purposes. This allows the application to check the user's roles when accessing protected routes or performing actions that require specific permissions.
     },
     process.env.JWT_SECRET,
@@ -825,4 +826,25 @@ export const logoutUser = async (refreshToken) => {
     if (result.rows.length === 0) {
         throw new Error("Invalid refresh token");
     }
+};
+
+
+export const getUserByIdService = async (userId) => {
+  const result = await pool.query(
+    `
+    SELECT
+      id,
+      first_name,
+      email
+    FROM users
+    WHERE id = $1
+    `,
+    [userId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("User not found");
+  }
+
+  return result.rows[0];
 };

@@ -115,8 +115,11 @@ if (
     event: "ISSUE_CREATED",
     issueId: issue.id,
     citizenId: userId,
+    
     citizenEmail: citizenEmail,
     title: issue.title,
+    village: issue.village,
+    address: issue.address,
     createdAt: new Date().toISOString(),
   },
 });

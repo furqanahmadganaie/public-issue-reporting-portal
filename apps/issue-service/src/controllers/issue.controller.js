@@ -5,13 +5,15 @@ export const createIssue = async (req, res) => {
   try {
 
     console.log("Body:", req.body);
-    console.log("Files:", req.files);
+    console.log("Files:", req.files)
+    ;
       // info comming from client 
     const issue = await createIssueService(
       req.body,
       req.files,
       req.user.id,
       req.user.email
+      
     );
 
     res.status(201).json({

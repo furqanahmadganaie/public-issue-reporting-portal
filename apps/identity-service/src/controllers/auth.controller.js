@@ -1,6 +1,6 @@
 //Controller → Receives the request and sends the response.
 
-import { registerUser, loginUser,refreshAccessToken,logoutUser,verifyPhone,resendOTPService,forgotPasswordService,resetPasswordService} from "../services/auth.service.js";
+import { registerUser, loginUser,refreshAccessToken,logoutUser,verifyPhone,resendOTPService,forgotPasswordService,resetPasswordService,getUserByIdService} from "../services/auth.service.js";
 
 
 
@@ -187,4 +187,21 @@ export const logout = async (req, res) => {
         });
 
     }
+};
+
+
+export const getUserById = async (req, res) => {
+  try {
+    const user = await getUserByIdService(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    res.status(404).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
